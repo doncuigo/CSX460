@@ -24,8 +24,49 @@ Write a function (f) that takes a vector of numbers, **x**, and returns a vector
 ```{r}
 f <- function(x) {
   
-  # ...
-  change
+ f <- function(x) {
+  u = x
+  for(i in 1:length(x)){
+    if(x[i] == 0)
+      u[i] = 0
+    else
+      u[i] = 1
+  }
+  if(prod(x) != 0)
+    prod(x)/x
+  else{
+    if(length(x) - sum(u) == 1){
+      y = x
+      for(i in 1:length(x)){
+        if(x[i] != 0)
+          y[i] = x[i]
+        else
+          y[i] = 1
+      }
+      z = x
+      for(i in 1:length(x)){
+        if(x[i] != 0)
+          z[i] = 0
+        else
+          z[i] = prod(y)
+      }
+      z
+    }
+    else
+      if(length(x) - sum(u) > 1){
+        z = 0*x
+        z
+        }
+      }
+  }
+a<- c(1, 5, 2, 8)
+f(a)
+b<- c(5, 0, 2, 8)
+f(b)
+c<- c(1, 0, 2, 0)
+f(c)
+
+
 }
 
 ```
@@ -50,7 +91,27 @@ Write a function f(x) to accept an integer vector, and returns a vector with tho
 
 ```{r}
 f <- function(x) {
-  # ...
+f <- function(x) {
+  z = x
+  for(i in 1:length(x))
+  {
+    if(x[i] %% 15 == 0)
+      z[i] = 'FizzBuzz'
+    else
+      {
+        if(x[i] %% 3 == 0)
+          z[i] = 'Fizz'
+        else
+        {
+          if(x[i] %% 5 == 0)
+            z[i] = 'Buzz'
+        }
+      }
+  }
+  z
+}
+x <- 1:30
+f(x)
   
 }
 ```
