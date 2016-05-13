@@ -40,14 +40,27 @@ Save the caret objects with the names provided.
 
 # Your work here. 
 
-fit.glm <- ..
-fit.knn <- ..
-fit.rpart <- ..
-fit.rf <- ..
-fit.myown <- ..
+#glm
+
+library(caret)
+library(magrittr)
+library(MASS)
+data(GermanCredit)
+gc <- GermanCredit
+
+ctrl = trainControl(method="boot", number=5, classProb=TRUE, savePrediction=TRUE)
 
 
-````
+
+fit.glm <- train(Class ~ ., data=gc, trControl=ctrl, method="glm", family="binomial")
+fit.knn <- train(Class ~ ., data=gc, trControl=ctrl, method="knn", tuneGrid=data.frame(k=c(40,50,60)))
+fit.rpart <- train( Class ~ ., data=gc, trControl=ctrl
+              , method="rpart", tuneLength=20) 
+fit.rf <- train(Class ~ ., data=gc, trControl=ctrl, method="rf", prox=TRUE, allowParallel=TRUE)
+fit.myown <- train(Class ~ ., data=gc, trControl=ctrl, method="blackboost")
+
+
+```
 
 
 - Compare the models using `caret::confusionMatrix`
@@ -59,11 +72,41 @@ Show your work!
 ```{r}
 
 .. # YOUR WORK HERE
+install.packages(pROC)
+library(pROC)
+
+cm.glm <- fit.glm %>% confusionMatrix(positive="Bad")
+cm.knn <- fit.knn %>% confusionMatrix(positive="Bad")
+cm.rpart <- fit.rpart %>% confusionMatrix(positive="Bad")
+cm.rf <- fit.rf %>% confusionMatrix(positive="Bad")
+cm.myown <- fit.myown %>% confusionMatrix(positive="Bad")
+
+#glm auc = .753
+roc.glm <- roc(fit.glm$pred$obs, fit.glm$pred$Bad, auc=TRUE)
+roc.glm.plot <- roc.glm %>% plot(print.auc=TRUE, grid=TRUE)
+
+#knn ac = .5634
+roc.knn <- roc(fit.knn$pred$obs, fit.knn$pred$Bad, auc=TRUE)
+roc.knn.plot <- roc.knn %>% plot(print.auc=TRUE, grid=TRUE)
+
+#rpart auc = .663
+roc.rpart <- roc(fit.rpart$pred$obs, fit.rpart$pred$Bad, auc=TRUE)
+roc.rpart.plot <- roc.rpart %>% plot(print.auc=TRUE, grid=TRUE)
+
+#rf auc = .7735
+roc.rf <- roc(fit.rf$pred$obs, fit.rf$pred$Bad, auc=TRUE)
+roc.rf.plot <- roc.rf %>% plot(print.auc=TRUE, grid=TRUE)
+
+#myown auc = .7533
+roc.myown <- roc(fit.myown$pred$obs, fit.myown$pred$Bad, auc=TRUE)
+roc.myown.plot <- roc.myown %>% plot(print.auc=TRUE, grid=TRUE)
 
 ```
 
 
 Q: Which models would you select based on these tools?
+
+Based on the tools, I'd select the glm or random forest models. Both models did a much better job of predicting bad credit (based on the confusion matrices) than the other models. The glm model correctly identified roughly 50% of the bad credit cases; the rf model correctly identified 43%. They also had the highest accuracies (.7413 for glm and .7557 for rf) of the lot. The highest AUC out of all these models belonged to rf (.775); the glm had an AUC of .753.
 
 Q: If you assume that a `Class=="bad""` is 10 more costly than `Class=="good"`, determine your threshold for the model of your choice.  Show your work.
 
@@ -72,5 +115,12 @@ Q: If you assume that a `Class=="bad""` is 10 more costly than `Class=="good"`, 
 
 .. # YOUR WORK HERE
 
+#Struggled with this for a couple hours. Eventually came up with the solution below based on https://mlr-org.github.io/mlr-tutorial/release/html/cost_sensitive_classif/index.html and http://stackoverflow.com/questions/32128879/how-to-change-the-threshold-for-binary-classification
+
+th <- 1/11
+
+dat <- gc
+dat$bad <- as.factor(ifelse(dat$Class == "Bad", "Bad", "Good"))
+confusionMatrix(table(predict(fit.rf,type="prob")[,"Bad"]>=th,dat$bad=="Bad"))
 
 ```
