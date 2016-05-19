@@ -1,0 +1,164 @@
+---
+title: "05-exercises"
+author: "Your Name Here"
+date: "2016-05-xx"
+output: html_document
+---
+
+## Reading:
+- **APM** Chapter 8.6 and 8.8 
+- **APM** Chapter 14.8 
+- **APM** Chapter 7.1 & 7.3 "Non-Linear Regression Models"
+- **APM** Chapter 13.2 & 13.4 "Non-Linear Classifcation Models"
+
+
+```{r,echo=FALSE}
+
+packs <-  c('AppliedPredictiveModeling', 'ggplot2', 'magrittr', 'dplyr')
+
+for( nm in packs ) { 
+  # message(nm)
+  if( ! nm  %in% installed.packages()[,1]  ) install.packages(nm)
+  library(nm, character.only = TRUE)
+}
+
+# Load data set into environment
+data(FuelEconomy)
+.. = NULL  # Needed for aesthetics 
+
+FE <- dplyr::bind_rows(cars2010, cars2011, cars2012)    # Define Da
+
+```
+
+## Fuel Economy 
+
+
+This week we return to the Fuel Economy Data having learned much about model building. This assignment is to go through the process of building several regression models and pick the most predictive model. Use the `FE` data set created for you above.
+
+
+Start by making choosing a metric and making a naive guess of model performance: 
+
+Metric: RMSE
+Naive Guess: Mean
+Expected Model Performance (based on Naive Guess): RMSE = 8.096176
+
+Show your work below for the calculations
+
+```{r} 
+
+  
+naive_guess = mean(FE$FE)
+
+err_naive_guess = sqrt( sum( (FE$FE - naive_guess)^2) / nrow(FE) )
+
+```
+
+
+Based only your intuition, how low do your think you can get your metric: 5
+
+
+## Examine your data
+
+ * Plot your response/outcome 
+
+ * Make a guess of a strong predictor: EngDispl 
+ * Plot your response vs your predictor. 
+
+```{r}
+
+FE_plot <- qplot(FE$FE)
+
+plot(FE$EngDispl,FE$FE, xlab = "Engine Displacement", ylab = "Fuel Economy")
+
+```
+
+
+
+## Build Simple Models
+
+Using **caret**, build a simple linear model and a simple tree model. 
+
+```{r}
+
+#split data into training and test sets
+
+set.seed(1234)
+split <- sample(nrow(FE), floor(0.5*nrow(FE)))
+trainFE<-FE[split,]
+testFE<-FE[-split,]
+
+
+#ANSWER for fit.lm
+
+fit.lm <- fit.lm <- lm(FE ~ EngDispl, data = trainFE)
+
+# calculate RMSE
+
+pred.lm <- predict(fit.lm, data = testFE)
+rmse(testFE$FE, pred.lm)
+
+#RMSE for fit.lm is 4.947556
+
+#ANSWER for fit.rp
+
+ fit.rp <- rpart(FE ~ EngDispl, data = trainFE, method = "anova")
+ 
+
+#calculate RMSE 
+
+pred.rp <- predict(fit.rp, testFE)
+rmse(testFE$FE, pred.rp)
+
+#RMSE for fit.rp is 4.457793
+ 
+```
+
+
+What did you learn about the data from these models.
+
+The simple linear model yielded a RMSE of 4.947556. The simple tree model yielded a RMSE of 4.457793.
+
+## Build More Advanced Models
+
+Now refine your models. Use **caret** to build advanced models:
+- one that uses model averaging (bagging) 
+- one that uses boosting 
+
+```{r}
+
+# Your work here.
+
+#Setting up the bagging model
+
+> length_divisor <- 20
+> predictions<-foreach(m=1:400,.combine=cbind) %do% { 
++     sampleRows <- sample(nrow(trainFE), size=floor((nrow(trainFE)/length_divisor)))
++     fit <- lm(FE ~ EngDispl, data = trainFE[sampleRows,])
++     predictions <- data.frame(predict(fit, testFE,se.fit=TRUE)[[1]])
++ }
+
+
+fit.bag   <- predictions
+
+#RMSE for the bagging model was 4.956292
+
+fit.boost <- gbm(FE ~ EngDispl, data = trainFE, distribution = "gaussian", n.trees=20)
+
+#Work
+
+library(gbm)
+fit.boost <- gbm(FE ~ EngDispl, data = trainFE, distribution = "gaussian", n.trees=20)
+pred.boost<- predict(fit.boost,testFE, n.trees=20)
+rmse(pred.boost,testFE$FE)
+
+#RMSE turned out to be 8.011908
+
+```
+
+
+## Conclusion 
+
+Which model would you use and why?  Under different circumstances why would you choose one of the other models.
+
+Based solely on my RMSE metric, the simple rpart tree yielded the best results. This data set seems to have high variance, though, so it might make sense to go with a bagging model, as this lends stability to the modeling process.
+
